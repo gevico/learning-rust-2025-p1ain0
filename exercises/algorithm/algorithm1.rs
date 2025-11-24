@@ -2,7 +2,6 @@
 	single linked list merge
 	This problem requires you to merge two ordered singly linked lists into one ordered singly linked list
 */
-// I AM NOT DONE
 
 use std::fmt::{self, Display, Formatter};
 use std::ptr::NonNull;
@@ -69,15 +68,69 @@ impl<T> LinkedList<T> {
             },
         }
     }
-	pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self
-	{
-		//TODO
-		Self {
-            length: 0,
-            start: None,
-            end: None,
+    pub fn merge(list_a: LinkedList<T>, list_b: LinkedList<T>) -> Self
+    where
+        T: Ord,
+    {
+        let mut merged : LinkedList<T>= LinkedList::new();
+        
+        let mut current_a = list_a.start;
+        let mut current_b = list_b.start;
+        
+
+        let mut new_start: Option<NonNull<Node<T>>> = None;
+        let mut new_end: Option<NonNull<Node<T>>> = None;
+        let mut length = 0;
+        
+        loop {
+            let should_take_from_a = match (current_a, current_b) {
+                (Some(ptr_a), Some(ptr_b)) => {
+                    
+                    let val_a = unsafe { &(*ptr_a.as_ptr()).val };
+                    let val_b = unsafe { &(*ptr_b.as_ptr()).val };
+                    val_a <= val_b
+                },
+                (Some(_), None) => true,
+                (None, Some(_)) => false,
+                (None, None) => break,
+            };
+            
+            let (node_to_take, remaining_a, remaining_b) = if should_take_from_a {
+                let node_ptr = current_a.unwrap();
+                let node_ref = unsafe { &*node_ptr.as_ptr() };
+                current_a = node_ref.next;
+                (node_ptr, current_a, current_b)
+            } else {
+                let node_ptr = current_b.unwrap();
+                let node_ref = unsafe { &*node_ptr.as_ptr() };
+                current_b = node_ref.next;
+                (node_ptr, current_a, current_b)
+            };
+            
+            let new_node = Box::new(Node {
+                val: unsafe { std::ptr::read(&(*node_to_take.as_ptr()).val) },
+                next: None,
+            });
+            let new_node_ptr = unsafe { NonNull::new_unchecked(Box::into_raw(new_node)) };
+            
+            match new_end {
+                None => {
+                    new_start = Some(new_node_ptr);
+                },
+                Some(end_ptr) => unsafe {
+                    (*end_ptr.as_ptr()).next = Some(new_node_ptr);
+                },
+            }
+            new_end = Some(new_node_ptr);
+            length += 1;
         }
-	}
+        
+        Self {
+            length,
+            start: new_start,
+            end: new_end,
+        }
+    }
 }
 
 impl<T> Display for LinkedList<T>

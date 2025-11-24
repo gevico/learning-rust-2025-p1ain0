@@ -2,7 +2,6 @@
 	heap
 	This question requires you to implement a binary heap function
 */
-// I AM NOT DONE
 
 use std::cmp::Ord;
 use std::default::Default;
@@ -36,10 +35,21 @@ where
         self.len() == 0
     }
 
+    /// 插入堆（上浮）
     pub fn add(&mut self, value: T) {
-        //TODO
-    }
+        self.items.push(value);
+        self.count += 1;
 
+        let mut idx = self.count;
+        while idx > 1 {
+            let p = self.parent_idx(idx);
+            if !(self.comparator)(&self.items[idx], &self.items[p]) {
+                break;
+            }
+            self.items.swap(idx, p);
+            idx = p;
+        }
+    }
     fn parent_idx(&self, idx: usize) -> usize {
         idx / 2
     }
@@ -57,8 +67,32 @@ where
     }
 
     fn smallest_child_idx(&self, idx: usize) -> usize {
-        //TODO
-		0
+        let left = self.left_child_idx(idx);
+        let right = self.right_child_idx(idx);
+
+        if right > self.count {
+            return left;
+        }
+
+        if (self.comparator)(&self.items[left], &self.items[right]) {
+            left
+        } else {
+            right
+        }
+    }
+    fn sift_down(&mut self, mut idx: usize) {
+        while self.children_present(idx) {
+            let smallest_child_idx = self.smallest_child_idx(idx);
+            
+            // If the current node already satisfies the heap property with its children, stop.
+            if !(self.comparator)(&self.items[smallest_child_idx], &self.items[idx]) {
+                break;
+            }
+
+            // Otherwise, swap with the child that has higher priority.
+            self.items.swap(idx, smallest_child_idx);
+            idx = smallest_child_idx; // Move down to the child's position
+        }
     }
 }
 
@@ -84,9 +118,42 @@ where
     type Item = T;
 
     fn next(&mut self) -> Option<T> {
-        //TODO
-		None
+        if self.is_empty() {
+            return None;
+        }
+
+        // The root element (highest priority) is at index 1.
+        // We need to remove it and replace it with the last element.
+        // Then, we sift down the new root to maintain the heap property.
+        
+        // 1. Take the root element out by swapping it with the default value.
+        //    We temporarily place the default value at index 1.
+        let root_index = 1;
+        let last_index = self.count; // Current last valid index
+        
+        // If the heap has only one element, we can just pop it directly.
+        if last_index == 1 {
+            self.count = 0;
+            return Some(self.items.pop().unwrap()); // This removes and returns the root/default
+        }
+
+        // 2. Swap the root with the last element.
+        self.items.swap(root_index, last_index);
+        
+        // 3. Pop the old root (now at the end) and decrement the count.
+        let popped_root = self.items.pop().unwrap();
+        self.count -= 1;
+
+        // 4. Sift down the new root (which was previously at the end).
+        //    We only need to sift down if there are still elements left after popping.
+        if self.count > 0 {
+            self.sift_down(root_index);
+        }
+
+        // 5. Return the original root element that was popped.
+        Some(popped_root)
     }
+
 }
 
 pub struct MinHeap;
